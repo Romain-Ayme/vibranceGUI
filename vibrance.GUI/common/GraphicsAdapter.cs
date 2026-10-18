@@ -409,7 +409,7 @@ namespace vibrance.GUI.common
         /// title bar string, so the report arrives with the build and architecture already in it.
         /// </summary>
         public const string BugReportUrl =
-            "https://github.com/SwatX18/vibranceGUI/issues/new?template=bug_report.yml";
+            "https://github.com/Romain-Ayme/vibranceGUI/issues/new?template=bug_report.yml";
 
         /// <summary>
         /// Windows' ERROR_MOD_NOT_FOUND. Worth naming: it is the loader saying "a file I needed is

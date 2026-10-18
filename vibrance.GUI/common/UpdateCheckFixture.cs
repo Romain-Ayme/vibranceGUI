@@ -218,7 +218,7 @@ namespace vibrance.GUI.common
 
             check("the production URL points at this fork's releases",
                 GitHubReleaseSource.LatestReleaseUrl.StartsWith("https://") &&
-                GitHubReleaseSource.LatestReleaseUrl.Contains("SwatX18/vibranceGUI") &&
+                GitHubReleaseSource.LatestReleaseUrl.Contains("Romain-Ayme/vibranceGUI") &&
                 GitHubReleaseSource.LatestReleaseUrl.EndsWith("/releases/latest"));
 
             lines.Add(string.Empty);

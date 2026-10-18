@@ -181,7 +181,7 @@ namespace vibrance.GUI.common
                 !unknown64.ToLowerInvariant().Contains("twitter") &&
                 !unknown64.ToLowerInvariant().Contains("x.com"));
             check("the bug report URL is this fork's issue form",
-                GraphicsAdapterHelper.BugReportUrl.Contains("github.com/SwatX18/vibranceGUI/issues/new") &&
+                GraphicsAdapterHelper.BugReportUrl.Contains("github.com/Romain-Ayme/vibranceGUI/issues/new") &&
                 GraphicsAdapterHelper.BugReportUrl.Contains("bug_report.yml"));
 
             // The dual-driver dialog advises renaming or deleting a system file. It named the

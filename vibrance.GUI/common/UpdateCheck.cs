@@ -161,7 +161,7 @@ namespace vibrance.GUI.common
     public class GitHubReleaseSource : IReleaseSource
     {
         public const string LatestReleaseUrl =
-            "https://api.github.com/repos/SwatX18/vibranceGUI/releases/latest";
+            "https://api.github.com/repos/Romain-Ayme/vibranceGUI/releases/latest";
 
         // GitHub rejects an API request with no User-Agent outright (403), which is the single
         // most common way a first attempt at this fails.

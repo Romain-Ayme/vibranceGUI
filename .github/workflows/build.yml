@@ -1,0 +1,72 @@
+name: build
+
+on:
+  push:
+    branches: [master]
+    tags: ['v*']
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: microsoft/setup-msbuild@v2
+
+      # 1. Rebuild the native DLLs from native/vibranceDLL so the shipped binaries
+      #    trace back to audited source rather than to checked-in blobs.
+      - name: Build native DLLs
+        shell: pwsh
+        run: |
+          msbuild native/vibranceDLL/vibranceDLL.sln /p:Configuration=Release /p:Platform=Win32 /m
+          msbuild native/vibranceDLL/vibranceDLL.sln /p:Configuration=Release /p:Platform=x64 /m
+          $found = Get-ChildItem native/vibranceDLL -Recurse -Filter vibranceDLL.dll | Where-Object { $_.FullName -match 'Release' }
+          $found | ForEach-Object { "$($_.FullName)  $((Get-FileHash $_.FullName -Algorithm SHA256).Hash)" }
+          $x86 = $found | Where-Object { $_.FullName -notmatch 'x64' } | Select-Object -First 1
+          $x64 = $found | Where-Object { $_.FullName -match 'x64' } | Select-Object -First 1
+          if (-not $x86 -or -not $x64) { throw "native DLL(s) missing" }
+          Write-Host "Checked-in DLLs (informational, a rebuild is not byte-identical):"
+          Get-FileHash vibrance.GUI/NVIDIA/vibranceDLL.dll, vibrance.GUI/NVIDIA/vibranceDLL64.dll -Algorithm SHA256 | Format-Table Hash, Path
+          Copy-Item $x86.FullName vibrance.GUI/NVIDIA/vibranceDLL.dll -Force
+          Copy-Item $x64.FullName vibrance.GUI/NVIDIA/vibranceDLL64.dll -Force
+
+      # 2. Build the GUI. The csproj targets v4.0, whose reference assemblies are not on
+      #    the runner, so build against 4.8 (same runtime on every supported Windows).
+      - name: Build GUI x86 + x64
+        shell: pwsh
+        run: |
+          foreach ($p in 'x86','x64') {
+            msbuild vibrance.GUI.sln /t:Rebuild /p:Configuration=Release /p:Platform=$p /p:TargetFrameworkVersion=v4.8 /m
+          }
+
+      - name: Package
+        shell: pwsh
+        run: |
+          $ver = (Select-String -Path vibrance.GUI/Properties/AssemblyInfo.cs -Pattern 'AssemblyVersion\("([\d.]+)"\)').Matches[0].Groups[1].Value
+          New-Item -ItemType Directory dist | Out-Null
+          foreach ($p in 'x86','x64') {
+            $exe = Get-ChildItem vibrance.GUI -Recurse -Filter vibrance.GUI.exe | Where-Object { $_.FullName -match "\\$p\\" -and $_.FullName -match 'Release' } | Select-Object -First 1
+            if (-not $exe) { throw "exe for $p not found" }
+            $dir = Join-Path $env:RUNNER_TEMP "pkg-$p"
+            New-Item -ItemType Directory $dir | Out-Null
+            Copy-Item $exe.FullName $dir
+            Copy-Item "$($exe.FullName).config" $dir
+            Compress-Archive "$dir\*" "dist/vibranceGUI-$ver-win-$p.zip"
+          }
+          Get-FileHash dist/*.zip -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } | Tee-Object dist/SHA256SUMS.txt
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: vibranceGUI-build
+          path: dist/*
+
+      - name: Publish release (tags only)
+        if: startsWith(github.ref, 'refs/tags/v')
+        uses: softprops/action-gh-release@v2
+        with:
+          files: dist/*
