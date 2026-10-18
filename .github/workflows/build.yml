@@ -14,9 +14,9 @@ jobs:
   build:
     runs-on: windows-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v7
 
-      - uses: microsoft/setup-msbuild@v2
+      - uses: microsoft/setup-msbuild@v3
 
       # 1. Rebuild the native DLLs from native/vibranceDLL so the shipped binaries
       #    trace back to audited source rather than to checked-in blobs.
@@ -60,13 +60,13 @@ jobs:
           }
           Get-FileHash dist/*.zip -Algorithm SHA256 | ForEach-Object { "$($_.Hash.ToLower())  $(Split-Path $_.Path -Leaf)" } | Tee-Object dist/SHA256SUMS.txt
 
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: vibranceGUI-build
           path: dist/*
 
       - name: Publish release (tags only)
         if: startsWith(github.ref, 'refs/tags/v')
-        uses: softprops/action-gh-release@v2
+        uses: softprops/action-gh-release@v3
         with:
           files: dist/*
